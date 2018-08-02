@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+anyargs=$1
+[ $anyargs ] && echo "try: ./conmon >> ~/var/log/conmon.log 2>&1" && exit 1;
+
+test=8.8.8.8
+state="up"
+while [ 1 ];
+do
+    ts=`date +"[%Y-%m-%d %H:%M:%S] "`
+    if nc -zw1 $test 443 && echo |openssl s_client -connect $test:443 2>&1 |awk '
+        handshake && $1 == "Verification" { if ($2=="OK") exit; exit 1 }
+        $1 $2 == "SSLhandshake" { handshake = 1 }'
+    then
+        state="up"
+        echo "$ts $state"
+        sleep 10
+    else
+        state="down"
+        echo "$ts $state"
+            ts=`date +"[%Y-%m-%d %H:%M:%S] "`
+            echo "$ts traceroute -n -w1 -m8 $test :"
+            traceroute -n -w1 -m8 $test
+        sleep 2
+    fi
+done
